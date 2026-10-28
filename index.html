@@ -130,7 +130,8 @@
 </div>
 <script>
   const tg = window.Telegram && window.Telegram.WebApp;
-  const inTG = !!(tg && tg.initData);
+  // initData пустой, когда окно открыто кнопкой клавиатуры, — поэтому смотрим на платформу
+  const inTG = !!(tg && tg.platform && tg.platform !== 'unknown');
   if (tg) { tg.ready(); tg.expand(); if (tg.disableVerticalSwipes) tg.disableVerticalSwipes(); }
 
   // ---------- тема ----------
