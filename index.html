@@ -68,12 +68,32 @@
   .row { display: flex; flex-wrap: wrap; gap: 8px; }
 
   /* ---------- полоса этапов ---------- */
-  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .steps { display: grid; gap: 6px; }
   .steps[hidden] { display: none; }
-  .steps div { font-size: 12px; color: var(--text-3); font-weight: 600; }
-  .steps div::before { content: ''; display: block; height: 5px; border-radius: 5px; background: var(--surface-3); margin-bottom: 6px; }
-  .steps div.done { color: var(--text-2); } .steps div.done::before { background: var(--good); }
-  .steps div.now { color: var(--text); } .steps div.now::before { background: linear-gradient(90deg, var(--hero-a), var(--hero-b)); }
+  .steps .stepline { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--text-2); }
+  .steps .stepline b { color: var(--text); }
+
+  /* ---------- выбор ответа, сетки ---------- */
+  .choices { display: grid; gap: 10px; }
+  .choices button { padding: 16px 6px; border-radius: 18px; background: var(--surface-2); font: 600 20px/1.1 -apple-system, "SF Pro Display", system-ui;
+    display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .choices button:active { background: var(--surface-3); }
+  .sw { width: 16px; height: 16px; border-radius: 50%; flex: none; }
+  .halves { display: grid; gap: 8px; }
+  .half { position: relative; min-height: 92px; border-radius: 16px; background: var(--surface-2); display: grid; place-items: center; }
+  .half small { position: absolute; top: 8px; left: 12px; font-size: 12px; font-weight: 700; color: var(--text-3); letter-spacing: .04em; }
+  .half b { font: 700 52px/1 -apple-system, "SF Pro Display", system-ui; }
+  .half.on { box-shadow: inset 0 0 0 2px var(--hero-b); }
+  .keyrow { display: flex; gap: 4px; margin-bottom: 14px; }
+  .keyrow span { flex: 1; display: grid; justify-items: center; gap: 2px; padding: 6px 0; border-radius: 10px; background: var(--surface-2); font-weight: 600; font-size: 14px; }
+  .keyrow b { font-size: 22px; font-weight: 400; }
+  .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .grid button { aspect-ratio: 1; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font: 600 24px/1 -apple-system, system-ui; }
+  .grid button.miss { background: color-mix(in srgb, var(--critical) 30%, var(--surface)); }
+  .corsi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .corsi button { aspect-ratio: 1; border-radius: 20px; background: var(--surface-2); transition: background .1s; }
+  .corsi button.lit { background: linear-gradient(135deg, var(--hero-a), var(--hero-b)); }
+  .corsi button.tap { background: var(--blue); }
 
   /* ---------- история ---------- */
   .spark { width: 100%; height: 64px; display: block; overflow: visible; }
@@ -125,7 +145,7 @@
     <div class="ttl"><div class="eyebrow">Ясный ум</div><h1 id="title">Проверка мозга</h1></div>
     <button class="btn sm" id="themeBtn" title="Тема оформления">◐ Тема</button>
   </header>
-  <div class="steps" id="steps" hidden><div>Реакция</div><div>Жми / не жми</div><div>Счёт</div><div>Память</div></div>
+  <div class="steps" id="steps" hidden><div class="stepline"><b id="stepName"></b><span id="stepNum"></span></div><div class="bar"><i id="stepBar"></i></div></div>
   <main id="screen"></main>
 </div>
 <script>
@@ -160,9 +180,13 @@
   let running = false;
   document.addEventListener('visibilitychange', () => { if (document.hidden && running) R.interrupted = true; });
 
+  const STEPS = ['Бдительность', 'Самоконтроль', 'Концентрация', 'Гибкость', 'Скорость мышления',
+                 'Восприятие', 'Счёт', 'Память на цифры', 'Пространственная память', 'Логика'];
   function setStep(i) {
-    const st = $('steps'); st.hidden = i < 0;
-    [...st.children].forEach((d, k) => { d.className = k < i ? 'done' : k === i ? 'now' : ''; });
+    $('steps').hidden = i < 0;
+    $('stepName').textContent = STEPS[i] || 'Готово';
+    $('stepNum').textContent = i < STEPS.length ? `${i + 1} из ${STEPS.length}` : '';
+    $('stepBar').style.width = Math.min(100, (i / STEPS.length) * 100) + '%';
   }
 
   // ---------- старт ----------
@@ -187,8 +211,8 @@
       <div style="display:grid;gap:16px">
         ${hist.length ? `<div class="card"><div class="label">Последние замеры</div>
           <div class="kpi"><b>${last}</b><span class="muted">из 100 в прошлый раз · норма 70</span></div>${sparkSvg()}</div>` : `
-          <div class="card"><h2>4 коротких теста · ~4 минуты</h2>
-          <p class="muted">Реакция, «жми / не жми», счёт в уме и память на цифры. В конце бот скажет, в каком ты состоянии и что лучше делать сегодня.</p>
+          <div class="card"><h2>10 коротких тестов · ~7 минут</h2>
+          <p class="muted">${STEPS.join(', ').toLowerCase()}. В конце бот разберёт все 10 сфер и скажет, что лучше делать сегодня.</p>
           <p class="muted">Первые 8 замеров — привыкание: так программа узнаёт твою личную норму.</p></div>`}
         <div class="card"><div class="label">Как себя чувствуешь?</div>
           <div class="row" id="feel">${FEELS.map((f, i) => `<button class="btn" data-v="${i + 1}">${f[0]} ${f[1]}</button>`).join('')}</div>
@@ -399,18 +423,159 @@
     });
   }
 
+  // ---------- тесты «выбери ответ на время»: концентрация, гибкость, скорость, логика ----------
+  function runTimed(durMs, trial, cols) {
+    return new Promise((done) => {
+      screen.innerHTML = `<div style="display:grid;gap:14px"><div class="bar"><i id="bar" style="width:100%"></i></div>
+        <div class="card question" id="qc"><div id="tq"></div></div>
+        <div class="choices" id="ch" style="grid-template-columns:repeat(${cols},1fr)"></div>
+        <div class="muted" style="text-align:center;font-size:14px">Верно: <b id="ok">0</b> · ошибок: <b id="bad">0</b></div></div>`;
+      let correct = 0, wrong = 0, cur = null, shown = 0, over = false;
+      const rts = [], end = performance.now() + durMs;
+      const flash = (c) => { const q = $('qc'); q.classList.remove('flash-ok', 'flash-bad'); void q.offsetWidth; q.classList.add(c); };
+      function show() {
+        cur = trial();
+        $('tq').innerHTML = cur.html;
+        $('ch').innerHTML = cur.options.map((o, i) => `<button data-i="${i}">${o}</button>`).join('');
+        shown = performance.now();
+      }
+      $('ch').addEventListener('pointerdown', (e) => {
+        const b = e.target.closest('button'); if (!b || over) return; e.preventDefault();
+        if (+b.dataset.i === cur.answer) { correct++; rts.push(evTime(e) - shown); flash('flash-ok'); } else { wrong++; flash('flash-bad'); }
+        $('ok').textContent = correct; $('bad').textContent = wrong;
+        show();
+      });
+      show();
+      const t = setInterval(() => {
+        const left = end - performance.now();
+        $('bar').style.width = Math.max(0, (left / durMs) * 100) + '%';
+        if (left <= 0) { clearInterval(t); over = true; done({ correct, wrong, rt: rts.length ? Math.round(median(rts)) : null }); }
+      }, 100);
+    });
+  }
+
+  // 3. концентрация: Строоп — назвать цвет, которым написано слово
+  const COLORS = [['красный', '#ff453a'], ['синий', '#0a84ff'], ['зелёный', '#30d158'], ['жёлтый', '#ffd60a']];
+  function stroopTrial() {
+    const w = rnd(0, 3); let c = w;
+    if (Math.random() < 0.7) while (c === w) c = rnd(0, 3);
+    return { html: `<div class="q" style="color:${COLORS[c][1]}">${COLORS[w][0].toUpperCase()}</div><div class="muted">Каким <b>цветом</b> написано?</div>`,
+             options: COLORS.map(([n, col]) => `<span class="sw" style="background:${col}"></span>${n}`), answer: c };
+  }
+
+  // 4. гибкость: сверху — «чётное?», снизу — «больше 5?»
+  function switchTrial() {
+    let n = rnd(1, 9); while (n === 5) n = rnd(1, 9);
+    const top = Math.random() < 0.5, yes = top ? n % 2 === 0 : n > 5;
+    return { html: `<div class="halves"><div class="half ${top ? 'on' : ''}"><small>ЧЁТНОЕ?</small>${top ? `<b>${n}</b>` : ''}</div>
+                    <div class="half ${top ? '' : 'on'}"><small>БОЛЬШЕ 5?</small>${top ? '' : `<b>${n}</b>`}</div></div>`,
+             options: ['Да', 'Нет'], answer: yes ? 0 : 1 };
+  }
+
+  // 5. скорость мышления: символ → цифра по ключу (каждый раз новый ключ)
+  const SYMS = ['★', '▲', '●', '◆', '✚', '♥︎'];
+  function makeDsst() {
+    const digits = [1, 2, 3, 4, 5, 6].sort(() => Math.random() - 0.5);
+    const key = `<div class="keyrow">${SYMS.map((s, i) => `<span><b>${s}</b>${digits[i]}</span>`).join('')}</div>`;
+    return () => { const s = rnd(0, 5); return { html: `${key}<div class="q">${SYMS[s]}</div>`, options: ['1', '2', '3', '4', '5', '6'], answer: digits[s] - 1 }; };
+  }
+
+  // 10. логика: какое число дальше
+  const SEQS = [
+    () => { const a = rnd(2, 20), d = rnd(2, 9); return [0, 1, 2, 3, 4].map((i) => a + i * d); },
+    () => { const a = rnd(60, 99), d = rnd(3, 9); return [0, 1, 2, 3, 4].map((i) => a - i * d); },
+    () => { const a = rnd(1, 5), r = rnd(2, 3); return [0, 1, 2, 3, 4].map((i) => a * r ** i); },
+    () => { const a = rnd(1, 10), x = rnd(1, 5), y = rnd(6, 12), s = [a]; for (let i = 1; i < 5; i++) s.push(s[i - 1] + (i % 2 ? x : y)); return s; },
+    () => { const a = rnd(1, 6); return [0, 1, 2, 3, 4].map((i) => (a + i) ** 2); },
+    () => { const s = [rnd(1, 5), rnd(2, 7)]; while (s.length < 5) s.push(s[s.length - 1] + s[s.length - 2]); return s; },
+    () => { const a = rnd(1, 4), s = [a]; for (let i = 1; i < 5; i++) s.push(s[i - 1] + i * a); return s; },
+  ];
+  function logicTrial() {
+    const s = SEQS[rnd(0, SEQS.length - 1)](), ans = s[4];
+    const opts = new Set([ans]), deltas = [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 10, -10];
+    while (opts.size < 4) { const v = ans + deltas[rnd(0, deltas.length - 1)]; if (v > 0) opts.add(v); }
+    const list = [...opts].sort(() => Math.random() - 0.5);
+    return { html: `<div class="q" style="font-size:32px">${s.slice(0, 4).join(', ')}, ?</div><div class="muted">Какое число дальше?</div>`,
+             options: list.map(String), answer: list.indexOf(ans) };
+  }
+
+  // ---------- 6. восприятие: найти «Щ» среди «Ш» ----------
+  function runVSearch(trials) {
+    return new Promise((done) => {
+      screen.innerHTML = `<div style="display:grid;gap:14px"><div class="muted" id="vs" style="text-align:center"></div><div class="grid" id="g"></div></div>`;
+      const rts = []; let wrong = 0, k = 0, target = 0, shown = 0;
+      function show() {
+        if (k >= trials) return done({ median: rts.length ? Math.round(median(rts)) : null, wrong });
+        target = rnd(0, 35);
+        $('g').innerHTML = Array.from({ length: 36 }, (_, i) => `<button data-i="${i}">${i === target ? 'Щ' : 'Ш'}</button>`).join('');
+        $('vs').textContent = `Найди «Щ» · ${k + 1} из ${trials}`;
+        shown = performance.now(); requestAnimationFrame((t) => { shown = t; });
+      }
+      $('g').addEventListener('pointerdown', (e) => {
+        const b = e.target.closest('button'); if (!b) return; e.preventDefault();
+        if (+b.dataset.i === target) { rts.push(evTime(e) - shown); k++; show(); } else { wrong++; b.classList.add('miss'); }
+      });
+      show();
+    });
+  }
+
+  // ---------- 9. пространственная память: повторить порядок вспышек ----------
+  function runCorsi() {
+    return new Promise((done) => {
+      screen.innerHTML = `<div style="display:grid;gap:14px"><div class="card question"><div class="muted" id="hint"></div></div><div class="corsi" id="cg"></div></div>`;
+      $('cg').innerHTML = Array.from({ length: 9 }, (_, i) => `<button data-i="${i}"></button>`).join('');
+      const cells = [...$('cg').children];
+      let len = 3, fails = 0, max = 0, seq = [], input = [], listening = false;
+      async function round() {
+        listening = false; input = []; seq = [];
+        while (seq.length < len) { const c = rnd(0, 8); if (c !== seq[seq.length - 1]) seq.push(c); }
+        $('hint').textContent = `Запомни порядок: ${len} клеток`;
+        await sleepMs(900);
+        for (const c of seq) { cells[c].classList.add('lit'); await sleepMs(650); cells[c].classList.remove('lit'); await sleepMs(250); }
+        $('hint').textContent = 'Нажми клетки в том же порядке'; listening = true;
+      }
+      function end(ok) {
+        listening = false;
+        if (ok) { max = len; fails = 0; len++; $('hint').textContent = '✓ Верно'; }
+        else { fails++; $('hint').textContent = '✕ Не тот порядок'; }
+        if (fails >= 2 || len > 9) return setTimeout(() => done({ max }), 900);
+        setTimeout(round, 1000);
+      }
+      $('cg').addEventListener('pointerdown', (e) => {
+        const b = e.target.closest('button'); if (!b || !listening) return; e.preventDefault();
+        const i = +b.dataset.i; input.push(i);
+        b.classList.add('tap'); setTimeout(() => b.classList.remove('tap'), 200);
+        if (i !== seq[input.length - 1]) end(false);
+        else if (input.length === seq.length) end(true);
+      });
+      round();
+    });
+  }
+
   // ---------- весь прогон ----------
   async function runAll() {
-    running = true; R.started = new Date().toISOString();
-    await intro(0, 'Реакция', 'Появится круг — <b>сразу</b> жми на поле. Не жми заранее. Полторы минуты.');
-    R.pvt = await runPVT(90000);
-    await intro(1, 'Жми / не жми', 'Зелёный круг «ЖМИ» — жми как можно быстрее. Красный квадрат «СТОП» — <b>не жми</b>. 30 сигналов.');
-    R.gng = await runGNG(30);
-    await intro(2, 'Счёт в уме', 'Решай примеры как можно быстрее и без ошибок. Одна минута.');
-    R.math = await runMath(60000);
-    await intro(3, 'Память на цифры', 'Цифры покажут по одной. Запомни и набери по порядку. Каждый раз на одну цифру больше.');
+    running = true; R.v = 2; R.started = new Date().toISOString();
+    await intro(0, 'Бдительность', 'Появится круг — <b>сразу</b> жми на поле. Не жми заранее. Одна минута.');
+    R.pvt = await runPVT(60000);
+    await intro(1, 'Самоконтроль', 'Зелёный круг «ЖМИ» — жми как можно быстрее. Красный квадрат «СТОП» — <b>не жми</b>. 24 сигнала.');
+    R.gng = await runGNG(24);
+    await intro(2, 'Концентрация', 'Слово-цвет написано другим цветом. Жми <b>цвет букв</b>, а не то, что написано. 30 секунд.');
+    R.stroop = await runTimed(30000, stroopTrial, 2);
+    await intro(3, 'Гибкость', 'Цифра в <b>верхней</b> половине — ответь, чётная ли она. В <b>нижней</b> — больше ли 5. 40 секунд.');
+    R.switch = await runTimed(40000, switchTrial, 2);
+    await intro(4, 'Скорость мышления', 'Вверху ключ: какой значок какой цифре равен. Жми цифру для значка в центре. 45 секунд.');
+    R.dsst = await runTimed(45000, makeDsst(), 3);
+    await intro(5, 'Восприятие', 'В сетке одни «Ш» и одна «Щ». Найди и нажми «Щ» как можно быстрее. 12 раз.');
+    R.vsearch = await runVSearch(12);
+    await intro(6, 'Счёт', 'Решай примеры как можно быстрее и без ошибок. 45 секунд.');
+    R.math = await runMath(45000);
+    await intro(7, 'Память на цифры', 'Цифры покажут по одной. Запомни и набери по порядку. Каждый раз на одну цифру больше.');
     R.span = await runSpan();
-    running = false; setStep(4);
+    await intro(8, 'Пространственная память', 'Клетки загорятся по очереди. Нажми их в том же порядке. Каждый раз на одну клетку больше.');
+    R.corsi = await runCorsi();
+    await intro(9, 'Логика', 'Ряд чисел идёт по правилу. Выбери, какое число следующее. 45 секунд.');
+    R.logic = await runTimed(45000, logicTrial, 2);
+    running = false; setStep(10);
     finish();
   }
 
