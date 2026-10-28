@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Ясный ум</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  /* ---------- токены FORGE: тёмная тема по умолчанию, светлая — по системе или переключателю ---------- */
+  :root {
+    color-scheme: dark;
+    --bg: #000000; --surface: #1c1c1e; --surface-2: #2c2c2e; --surface-3: #3a3a3c;
+    --line: rgba(255, 255, 255, .09); --line-2: rgba(255, 255, 255, .16);
+    --text: #f5f5f7; --text-2: #a1a1a6; --text-3: #6e6e73;
+    --blue: #0a84ff;
+    --good: #0ca30c; --warning: #fab219; --critical: #d03b3b; --neutral: #8e8e93;
+    --hero-a: #ff9f0a; --hero-b: #ff375f; --hero-c: #bf5af2;
+    --shadow: 0 20px 60px rgba(0, 0, 0, .45);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:where(:not([data-theme="dark"])) {
+      color-scheme: light;
+      --bg: #f5f5f7; --surface: #ffffff; --surface-2: #f2f2f4; --surface-3: #e6e6ea;
+      --line: rgba(0, 0, 0, .08); --line-2: rgba(0, 0, 0, .14);
+      --text: #1d1d1f; --text-2: #6e6e73; --text-3: #86868b;
+      --blue: #0071e3; --shadow: 0 20px 50px rgba(0, 0, 0, .08);
+    }
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f5f5f7; --surface: #ffffff; --surface-2: #f2f2f4; --surface-3: #e6e6ea;
+    --line: rgba(0, 0, 0, .08); --line-2: rgba(0, 0, 0, .14);
+    --text: #1d1d1f; --text-2: #6e6e73; --text-3: #86868b;
+    --blue: #0071e3; --shadow: 0 20px 50px rgba(0, 0, 0, .08);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; }
+  body { background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; touch-action: manipulation;
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif; }
+  h1, h2, .display { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif; letter-spacing: -.022em; }
+  button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+  .muted { color: var(--text-2); }
+
+  #app { max-width: 560px; margin: 0 auto; padding: 18px 16px 32px; display: grid; gap: 16px; }
+
+  /* ---------- шапка: надзаголовок + большой заголовок ---------- */
+  header { display: flex; align-items: flex-start; gap: 12px; }
+  header .ttl { flex: 1; min-width: 0; }
+  .eyebrow { font-size: 14px; font-weight: 700; letter-spacing: -.01em;
+    background: linear-gradient(90deg, var(--hero-a), var(--hero-b) 55%, var(--hero-c)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  header h1 { margin: 2px 0 0; font-size: 32px; line-height: 1.1; font-weight: 700; }
+
+  /* ---------- кнопки-пилюли ---------- */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 18px; border-radius: 980px;
+    background: var(--surface-2); color: var(--text); font-size: 15px; font-weight: 500; transition: background .15s, transform .1s; white-space: nowrap; }
+  .btn:active { transform: scale(.97); }
+  .btn.sm { padding: 6px 12px; font-size: 14px; }
+  .btn.big { width: 100%; padding: 16px 22px; font-size: 18px; font-weight: 600; color: #fff;
+    background: linear-gradient(90deg, var(--hero-a), var(--hero-b) 55%, var(--hero-c)); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn.on { background: var(--blue); color: #fff; }
+
+  .card { background: var(--surface); border-radius: 24px; padding: 20px; box-shadow: inset 0 0 0 1px var(--line); min-width: 0; }
+  .card h2 { margin: 0 0 4px; font-size: 21px; font-weight: 700; }
+  .card p { margin: 6px 0; }
+  .label { font-size: 13px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* ---------- полоса этапов ---------- */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .steps[hidden] { display: none; }
+  .steps div { font-size: 12px; color: var(--text-3); font-weight: 600; }
+  .steps div::before { content: ''; display: block; height: 5px; border-radius: 5px; background: var(--surface-3); margin-bottom: 6px; }
+  .steps div.done { color: var(--text-2); } .steps div.done::before { background: var(--good); }
+  .steps div.now { color: var(--text); } .steps div.now::before { background: linear-gradient(90deg, var(--hero-a), var(--hero-b)); }
+
+  /* ---------- история ---------- */
+  .spark { width: 100%; height: 64px; display: block; overflow: visible; }
+  .spark text { fill: var(--text-2); font-size: 11px; font-family: inherit; }
+  .kpi { display: flex; align-items: baseline; gap: 10px; }
+  .kpi b { font: 700 40px/1 -apple-system, "SF Pro Display", system-ui; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+
+  /* ---------- ручной ввод сна ---------- */
+  details summary { cursor: pointer; color: var(--blue); font-weight: 500; list-style: none; }
+  details summary::-webkit-details-marker { display: none; }
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .fields label { font-size: 13px; color: var(--text-2); display: grid; gap: 4px; }
+  input[type=time] { font: inherit; color: var(--text); background: var(--surface-2); border: 0; border-radius: 12px; padding: 10px 12px; width: 100%; }
+
+  /* ---------- поле теста ---------- */
+  .pad { position: relative; height: min(58vh, 460px); border-radius: 24px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+    display: grid; place-items: center; user-select: none; -webkit-user-select: none; overflow: hidden; }
+  .pad .top { position: absolute; top: 14px; left: 18px; right: 18px; display: flex; justify-content: space-between; font-size: 14px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .pad .msg { font-size: 18px; color: var(--text-2); text-align: center; padding: 0 20px; }
+  .stim { width: 150px; height: 150px; border-radius: 50%; display: none; place-items: center; font: 700 28px/1 -apple-system, "SF Pro Display", system-ui; color: #fff; font-variant-numeric: tabular-nums; }
+  .stim.on { display: grid; }
+  .stim.pvt { background: linear-gradient(135deg, var(--hero-a), var(--hero-b)); }
+  .stim.go { background: var(--good); }
+  .stim.nogo { background: var(--critical); border-radius: 22px; }
+  .flash-bad { animation: bad .35s; } @keyframes bad { 30% { background: color-mix(in srgb, var(--critical) 30%, var(--surface)); } }
+  .flash-ok { animation: ok .35s; } @keyframes ok { 30% { background: color-mix(in srgb, var(--good) 25%, var(--surface)); } }
+
+  /* ---------- счёт и цифры ---------- */
+  .question { text-align: center; padding: 18px 0 8px; }
+  .question .q { font: 700 44px/1.1 -apple-system, "SF Pro Display", system-ui; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .question .a { margin-top: 10px; min-height: 52px; font: 600 40px/1.2 -apple-system, "SF Pro Display", system-ui; color: var(--blue); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+  .keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .keys button { padding: 16px 0; border-radius: 18px; background: var(--surface-2); font: 600 26px/1 -apple-system, "SF Pro Display", system-ui; }
+  .keys button:active { background: var(--surface-3); }
+  .keys button.ok { background: var(--blue); color: #fff; font-size: 20px; }
+  .bar { height: 6px; border-radius: 6px; background: var(--surface-3); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--hero-a), var(--hero-b)); transition: width .25s linear; }
+  .digit { font: 700 96px/1 -apple-system, "SF Pro Display", system-ui; font-variant-numeric: tabular-nums; }
+
+  pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--text-2); }
+  .status { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--neutral); }
+  .dot.ok { background: var(--good); } .dot.warn { background: var(--warning); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="ttl"><div class="eyebrow">Ясный ум</div><h1 id="title">Проверка мозга</h1></div>
+    <button class="btn sm" id="themeBtn" title="Тема оформления">◐ Тема</button>
+  </header>
+  <div class="steps" id="steps" hidden><div>Реакция</div><div>Жми / не жми</div><div>Счёт</div><div>Память</div></div>
+  <main id="screen"></main>
+</div>
+<script>
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const inTG = !!(tg && tg.initData);
+  if (tg) { tg.ready(); tg.expand(); if (tg.disableVerticalSwipes) tg.disableVerticalSwipes(); }
+
+  // ---------- тема ----------
+  const root = document.documentElement;
+  function storedTheme() { try { return localStorage.getItem('theme'); } catch (e) { return null; } }
+  const startTheme = storedTheme() || (inTG ? tg.colorScheme : null);
+  if (startTheme) root.dataset.theme = startTheme;
+  document.getElementById('themeBtn').onclick = () => {
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : !matchMedia('(prefers-color-scheme: light)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    try { localStorage.setItem('theme', root.dataset.theme); } catch (e) {}
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const screen = $('screen');
+  const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
+  const median = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  // время события в той же шкале, что performance.now()
+  const evTime = (e) => (e && e.timeStamp > 1 && e.timeStamp < performance.now() + 50 ? e.timeStamp : performance.now());
+
+  // история индексов приходит от бота в адресе: ?h=72,65,80
+  const hist = (new URLSearchParams(location.search).get('h') || '').split(',').map(Number).filter((n) => n >= 0 && n <= 100);
+
+  const R = { v: 1, feel: null, coffee: false, sleep: null, interrupted: false };
+  let running = false;
+  document.addEventListener('visibilitychange', () => { if (document.hidden && running) R.interrupted = true; });
+
+  function setStep(i) {
+    const st = $('steps'); st.hidden = i < 0;
+    [...st.children].forEach((d, k) => { d.className = k < i ? 'done' : k === i ? 'now' : ''; });
+  }
+
+  // ---------- старт ----------
+  function sparkSvg() {
+    if (hist.length < 2) return '';
+    const w = 320, h = 56, n = hist.length;
+    const x = (i) => 8 + (i * (w - 16)) / (n - 1), y = (v) => 6 + (h - 12) * (1 - v / 100);
+    const pts = hist.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    const dots = hist.map((v, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3.5" fill="url(#g)"><title>Замер ${i + 1}: ${v}</title></circle>`).join('');
+    return `<svg class="spark" viewBox="0 0 ${w} ${h + 10}" preserveAspectRatio="none">
+      <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="var(--hero-a)"/><stop offset=".55" stop-color="var(--hero-b)"/><stop offset="1" stop-color="var(--hero-c)"/></linearGradient></defs>
+      <line x1="0" x2="${w}" y1="${y(70)}" y2="${y(70)}" stroke="var(--line-2)" stroke-dasharray="4 4"/><text x="${w}" y="${y(70) - 4}" text-anchor="end">норма 70</text>
+      <polyline points="${pts}" fill="none" stroke="url(#g)" stroke-width="2.5" stroke-linejoin="round"/>${dots}</svg>`;
+  }
+
+  const FEELS = [['😴', 'Разбит'], ['🥱', 'Вяло'], ['🙂', 'Норм'], ['😃', 'Бодро'], ['⚡', 'Огонь']];
+
+  function startScreen() {
+    setStep(-1);
+    const last = hist[hist.length - 1];
+    screen.innerHTML = `
+      <div style="display:grid;gap:16px">
+        ${hist.length ? `<div class="card"><div class="label">Последние замеры</div>
+          <div class="kpi"><b>${last}</b><span class="muted">из 100 в прошлый раз · норма 70</span></div>${sparkSvg()}</div>` : `
+          <div class="card"><h2>4 коротких теста · ~4 минуты</h2>
+          <p class="muted">Реакция, «жми / не жми», счёт в уме и память на цифры. В конце бот скажет, в каком ты состоянии и что лучше делать сегодня.</p>
+          <p class="muted">Первые 8 замеров — привыкание: так программа узнаёт твою личную норму.</p></div>`}
+        <div class="card"><div class="label">Как себя чувствуешь?</div>
+          <div class="row" id="feel">${FEELS.map((f, i) => `<button class="btn" data-v="${i + 1}">${f[0]} ${f[1]}</button>`).join('')}</div>
+          <div class="row" style="margin-top:14px"><button class="btn" id="coffee">☕ Кофе / чай за последний час</button></div>
+        </div>
+        <div class="card"><details id="sleepBox"><summary>Сон не пришёл с часов? Ввести вручную</summary>
+          <div class="fields">
+            <label>Лёг спать<input type="time" id="bed"></label>
+            <label>Проснулся<input type="time" id="wake"></label>
+          </div>
+          <div class="row" style="margin-top:10px" id="alarm"><button class="btn" data-v="0">Сам проснулся</button><button class="btn" data-v="1">По будильнику</button></div>
+        </details></div>
+        <p class="muted" style="margin:0;font-size:14px">Сядь удобно, держи телефон одной рукой, жми большим пальцем другой. Не сворачивай окно до конца.</p>
+        <button class="btn big" id="go" disabled>Начать</button>
+      </div>`;
+    let alarm = null;
+    $('feel').onclick = (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      R.feel = +b.dataset.v; [...$('feel').children].forEach((x) => x.classList.toggle('on', x === b)); $('go').disabled = false;
+    };
+    $('coffee').onclick = () => { R.coffee = !R.coffee; $('coffee').classList.toggle('on', R.coffee); };
+    $('alarm').onclick = (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      alarm = b.dataset.v === '1'; [...$('alarm').children].forEach((x) => x.classList.toggle('on', x === b));
+    };
+    $('go').onclick = () => {
+      const bed = $('bed').value, wake = $('wake').value;
+      if (bed && wake) R.sleep = { bed, wake, alarm };
+      runAll();
+    };
+  }
+
+  function intro(i, title, text) {
+    setStep(i);
+    return new Promise((res) => {
+      screen.innerHTML = `<div class="card" style="display:grid;gap:14px"><h2>${title}</h2><div class="muted">${text}</div>
+        <button class="btn big" id="begin">Поехали</button></div>`;
+      $('begin').onclick = res;
+    });
+  }
+
+  // ---------- 1. реакция (PVT) ----------
+  function runPVT(durMs) {
+    return new Promise((done) => {
+      screen.innerHTML = `<div class="pad" id="pad"><div class="top"><span id="left"></span><span id="cnt"></span></div>
+        <div class="stim pvt" id="stim"></div><div class="msg" id="msg">Жди круг…</div></div>`;
+      const pad = $('pad'), stim = $('stim'), msg = $('msg');
+      const rts = []; let falseStarts = 0, lapses = 0, state = 'wait', onset = 0, timer = 0, raf = 0;
+      const end = performance.now() + durMs;
+      const leftTick = setInterval(() => { $('left').textContent = `осталось ${Math.max(0, Math.ceil((end - performance.now()) / 1000))} с`; }, 250);
+
+      function next() {
+        state = 'wait'; stim.classList.remove('on'); msg.style.display = '';
+        msg.textContent = 'Жди круг…';
+        if (performance.now() > end) return finish();
+        timer = setTimeout(show, 2000 + Math.random() * 5000);
+      }
+      function show() {
+        raf = requestAnimationFrame(() => {
+          stim.textContent = ''; stim.classList.add('on'); msg.style.display = 'none';
+          onset = performance.now(); state = 'on';
+          raf = requestAnimationFrame((t) => { onset = t; count(); });
+        });
+        timer = setTimeout(() => record(3000), 3000);
+      }
+      function count() { if (state !== 'on') return; stim.textContent = Math.round(performance.now() - onset); raf = requestAnimationFrame(count); }
+      function record(rt) {
+        clearTimeout(timer); cancelAnimationFrame(raf); state = 'show';
+        rts.push(rt); if (rt >= 500) lapses++;
+        stim.textContent = rt >= 3000 ? '—' : Math.round(rt);
+        $('cnt').textContent = `${rts.length} ✓`;
+        setTimeout(next, 700);
+      }
+      pad.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        const now = evTime(e);
+        if (state === 'wait') {
+          falseStarts++; clearTimeout(timer); msg.textContent = 'Рано! Жди круг';
+          pad.classList.remove('flash-bad'); void pad.offsetWidth; pad.classList.add('flash-bad');
+          timer = setTimeout(next, 900);
+        } else if (state === 'on') {
+          const rt = now - onset;
+          if (rt < 100) { falseStarts++; clearTimeout(timer); cancelAnimationFrame(raf); state = 'show'; stim.classList.remove('on'); msg.style.display = ''; msg.textContent = 'Слишком рано'; setTimeout(next, 900); }
+          else record(rt);
+        }
+      });
+      function finish() {
+        clearInterval(leftTick);
+        done({ median: rts.length ? Math.round(median(rts)) : null, lapses, false: falseStarts, n: rts.length });
+      }
+      next();
+    });
+  }
+
+  // ---------- 2. жми / не жми (Go/No-Go) ----------
+  function runGNG(trials) {
+    return new Promise((done) => {
+      screen.innerHTML = `<div class="pad" id="pad"><div class="top"><span id="left"></span><span></span></div>
+        <div class="stim" id="stim"></div><div class="msg" id="msg">Приготовься…</div></div>`;
+      const pad = $('pad'), stim = $('stim'), msg = $('msg');
+      const nogoCount = Math.round(trials * 0.27);
+      const seq = Array(trials - nogoCount).fill('go').concat(Array(nogoCount).fill('nogo'));
+      for (let i = seq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [seq[i], seq[j]] = [seq[j], seq[i]]; }
+      seq.unshift('go', 'go'); seq.splice(trials);
+      const rts = []; let commission = 0, omission = 0, k = 0, cur = null, onset = 0, tapped = false;
+
+      pad.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (!cur || tapped) return;
+        tapped = true;
+        const rt = evTime(e) - onset;
+        if (cur === 'go') { rts.push(rt); flash('flash-ok'); } else { commission++; flash('flash-bad'); }
+        stim.classList.remove('on');
+      });
+      function flash(c) { pad.classList.remove('flash-ok', 'flash-bad'); void pad.offsetWidth; pad.classList.add(c); }
+
+      async function loop() {
+        await sleepMs(800); msg.style.display = 'none';
+        for (k = 0; k < seq.length; k++) {
+          $('left').textContent = `${k + 1} из ${seq.length}`;
+          await sleepMs(500 + Math.random() * 400);
+          tapped = false; cur = seq[k];
+          await new Promise((r) => requestAnimationFrame(() => {
+            stim.className = 'stim on ' + cur; stim.textContent = cur === 'go' ? 'ЖМИ' : 'СТОП';
+            onset = performance.now(); requestAnimationFrame((t) => { onset = t; r(); });
+          }));
+          await sleepMs(700);
+          if (cur === 'go' && !tapped) { omission++; flash('flash-bad'); }
+          cur = null; stim.className = 'stim';
+        }
+        done({ rt: rts.length ? Math.round(median(rts)) : null, commission, omission,
+               go: seq.filter((s) => s === 'go').length, nogo: seq.filter((s) => s === 'nogo').length });
+      }
+      loop();
+    });
+  }
+
+  // ---------- клавиатура для счёта и памяти ----------
+  function keypad(el, onKey) {
+    el.innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, '⌫', 0, 'OK'].map((k) => `<button data-k="${k}" class="${k === 'OK' ? 'ok' : ''}">${k}</button>`).join('');
+    el.addEventListener('pointerdown', (e) => { const b = e.target.closest('button'); if (!b) return; e.preventDefault(); onKey(b.dataset.k); });
+  }
+
+  // ---------- 3. счёт в уме ----------
+  function problem() {
+    if (Math.random() < 0.5) { const a = rnd(12, 79), b = rnd(11, 98 - a); return [`${a} + ${b}`, a + b]; }
+    const a = rnd(31, 99), b = rnd(11, a - 10); return [`${a} − ${b}`, a - b];
+  }
+  function runMath(durMs) {
+    return new Promise((done) => {
+      screen.innerHTML = `<div style="display:grid;gap:14px"><div class="bar"><i id="bar" style="width:100%"></i></div>
+        <div class="card question" id="qc"><div class="q" id="q"></div><div class="a" id="a"></div></div><div class="keys" id="keys"></div>
+        <div class="muted" style="text-align:center;font-size:14px">Верно: <b id="ok">0</b> · ошибок: <b id="bad">0</b></div></div>`;
+      let correct = 0, wrong = 0, ans = '', cur = problem(), over = false;
+      const end = performance.now() + durMs;
+      const show = () => { $('q').textContent = cur[0] + ' ='; $('a').textContent = ans || ' '; };
+      const flash = (c) => { const q = $('qc'); q.classList.remove('flash-ok', 'flash-bad'); void q.offsetWidth; q.classList.add(c); };
+      keypad($('keys'), (k) => {
+        if (over) return;
+        if (k === '⌫') ans = ans.slice(0, -1);
+        else if (k === 'OK') {
+          if (!ans) return;
+          if (+ans === cur[1]) { correct++; flash('flash-ok'); } else { wrong++; flash('flash-bad'); }
+          $('ok').textContent = correct; $('bad').textContent = wrong;
+          ans = ''; cur = problem();
+        } else if (ans.length < 3) ans += k;
+        show();
+      });
+      show();
+      const t = setInterval(() => {
+        const left = end - performance.now();
+        $('bar').style.width = Math.max(0, (left / durMs) * 100) + '%';
+        if (left <= 0) { clearInterval(t); over = true; done({ correct, wrong }); }
+      }, 100);
+    });
+  }
+
+  // ---------- 4. память на цифры ----------
+  function runSpan() {
+    return new Promise((done) => {
+      let len = 4, fails = 0, max = 0, input = '', seq = '', listening = false;
+      screen.innerHTML = `<div style="display:grid;gap:14px"><div class="card question"><div class="muted" id="hint"></div>
+        <div class="digit" id="d" style="min-height:100px"></div><div class="a" id="a"></div></div><div class="keys" id="keys"></div></div>`;
+      keypad($('keys'), (k) => {
+        if (!listening) return;
+        if (k === '⌫') input = input.slice(0, -1);
+        else if (k === 'OK') { if (input) check(); return; }
+        else if (input.length < 12) input += k;
+        $('a').textContent = input || ' ';
+      });
+      function make(n) { let s = ''; while (s.length < n) { const d = String(rnd(0, 9)); if (d !== s[s.length - 1]) s += d; } return s; }
+      async function round() {
+        listening = false; input = ''; $('a').textContent = ' ';
+        seq = make(len);
+        $('hint').textContent = `Запомни ${len} цифр`;
+        await sleepMs(900);
+        for (const d of seq) { $('d').textContent = d; await sleepMs(800); $('d').textContent = ''; await sleepMs(250); }
+        $('hint').textContent = 'Набери их по порядку и нажми OK'; listening = true;
+      }
+      function check() {
+        listening = false;
+        if (input === seq) { max = len; fails = 0; len++; $('hint').textContent = '✓ Верно'; }
+        else { fails++; $('hint').textContent = `✕ Было ${seq}`; }
+        if (fails >= 2 || len > 11) return setTimeout(() => done({ max }), 900);
+        setTimeout(round, 1100);
+      }
+      round();
+    });
+  }
+
+  // ---------- весь прогон ----------
+  async function runAll() {
+    running = true; R.started = new Date().toISOString();
+    await intro(0, 'Реакция', 'Появится круг — <b>сразу</b> жми на поле. Не жми заранее. Полторы минуты.');
+    R.pvt = await runPVT(90000);
+    await intro(1, 'Жми / не жми', 'Зелёный круг «ЖМИ» — жми как можно быстрее. Красный квадрат «СТОП» — <b>не жми</b>. 30 сигналов.');
+    R.gng = await runGNG(30);
+    await intro(2, 'Счёт в уме', 'Решай примеры как можно быстрее и без ошибок. Одна минута.');
+    R.math = await runMath(60000);
+    await intro(3, 'Память на цифры', 'Цифры покажут по одной. Запомни и набери по порядку. Каждый раз на одну цифру больше.');
+    R.span = await runSpan();
+    running = false; setStep(4);
+    finish();
+  }
+
+  function finish() {
+    const data = JSON.stringify(R);
+    $('title').textContent = 'Готово';
+    if (inTG) {
+      screen.innerHTML = `<div class="card"><div class="status"><span class="dot ok"></span>Отправлено</div>
+        <p class="muted">Итог придёт в чат текстом и голосом.</p></div>`;
+      setTimeout(() => tg.sendData(data), 400);
+    } else {
+      screen.innerHTML = `<div class="card"><div class="status"><span class="dot warn"></span>Открыто не из Telegram</div>
+        <p class="muted">Результат никуда не отправлен. Открой проверку кнопкой «🧠 Проверка» в боте.</p><pre id="out"></pre></div>`;
+      $('out').textContent = JSON.stringify(R, null, 2);
+    }
+    window.__result = R;
+  }
+
+  startScreen();
+</script>
+</body>
+</html>
